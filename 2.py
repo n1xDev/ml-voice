@@ -1,8 +1,8 @@
-import numpy, wave, scipy.io.wavfile, math, wavefile, sys, json
+import numpy, wave, scipy.io.wavfile, math, wavefile, sys, json, string
 from matplotlib import pyplot, mlab, ticker
 from collections import defaultdict
 
-main_filename = "a1.wav"
+main_filename = "1.wav"
 
 SAMPLE_RATE = 44100
 WINDOW_SIZE = 2048
@@ -62,10 +62,10 @@ def show_specgram(wave_data):
     ax = fig.add_axes((0.1, 0.1, 0.8, 0.8))
     ax.specgram(wave_data,
         NFFT=WINDOW_SIZE, noverlap=WINDOW_SIZE - WINDOW_STEP, Fs=SAMPLE_RATE)
-    pyplot.show()
+    #pyplot.show()
     print("WAVE DATA: ")
     print(wave_data[0])
-    specToJSON(wave_data)
+    #specToJSON(wave_data)
     fig.savefig("test.png")
     print("[+] specgram showing -- done!")
 
@@ -93,12 +93,12 @@ def omniCut(filename):
         print("Full Frames Count: " + str(wav.getnframes()))
         dif = round(float(wav.getnframes()) / float(framesCount))
         for i in range(0, framesCount):
-            if channel[i] > 200:
+            if channel[i] > 80:
                 start = i
                 break
         i = framesCount - 1
         while i > 0:
-            if channel[i] > 200:
+            if channel[i] > 80:
                 end = i
                 break
             i -=1
@@ -134,10 +134,12 @@ def cutWav(filename, start, end, dif):
     new_name = 'new_' + filename
     win= wave.open(filename, 'rb')
     wout= wave.open(new_name, 'wb')
+    print("New CUT WAV: " + new_name)
     print(str(start) + " -(start/end)- " + str(end))
     print("FrameRate: " + str(win.getframerate()))
     print("nFrames: " + str(win.getnframes()))
-    start, end = start*dif, end*dif
+    #start, end = (start*dif) - (start/6), (end*dif) + (end/6)
+    start, end = (start*dif) - 1000, (end*dif) + 1000
     print(dif)
     print("New: " + str(start) + " -(start/end)- " + str(end))
     s0, s1= int(start), int(end) #40000, 60000 # interval
@@ -169,7 +171,7 @@ def getAmplitudeGram(filename):
 
     axes.xaxis.set_major_formatter(ticker.FuncFormatter(format_time))
     pyplot.savefig("wave", dpi=DPI)
-    pyplot.show()
+    #pyplot.show()
 
 def getAmplGram(filename):
     wr = wave.open(filename, 'r')
@@ -192,24 +194,6 @@ def getMinMaxAmpl(filename):
     res.append(minAmpl)
     res.append(maxAmpl)
     return res
-
-def rootWavReinit():
-    global main_filename, wav, duration, w, h, k, DPI, peak, content, samples
-    global nchannels, sampwidth, framerate, nframes, comptype, compname
-    old_filename = main_filename
-    main_filename = "new_" + old_filename
-    wav = wave.open(main_filename, mode="r")
-    (nchannels, sampwidth, framerate, nframes, comptype, compname) = wav.getparams()
-    duration = nframes / framerate
-    w, h = 800, 300
-    k = nframes/w/32
-    DPI = 72
-    peak = 256 ** sampwidth / 2
-    content = wav.readframes(nframes)
-    samples = numpy.fromstring(content, dtype=types[sampwidth])
-    pyplot.figure(1, figsize=(float(w)/DPI, float(h)/DPI), dpi=DPI)
-    pyplot.subplots_adjust(wspace=0, hspace=0)
-    main_filename = old_filename
 
 def specToJSON(arr_data):
     spec_arr = []
@@ -236,26 +220,37 @@ def ExpendArr(out, out_len, source, source_len):
 
 def ExpendWaveData(filename):
     src = get_wave_data(filename)
-    out = [None] * 15000
+    out = [None] * 5000
     out = ExpendArr(out, len(out), src, len(src))
     print(len(src))
     print(len(out))
+    filename = filename[:5]
+    f = open(filename + '.txt', 'w')
+    #f = open(filename + '.txt', 'a')
+    for i in range(0, len(out)):
+        f.write(str(out[i]) + '\n')
     return out
 
-def Main():
+def doGeneral():
+    global main_filename
+    arr = list(range(1, 44))
+    for i in range(0, len(arr)):
+        main_filename = str(arr[i]) + '.wav'
+        print(main_filename)
+        Main(str(arr[i]))
+
+def Main(letter):
     wdata = get_wave_data(main_filename)
     print("Min&Max Amplitude: " + str(getMinMaxAmpl(main_filename)))
     print("Per frame: " + getPerFrame(main_filename, getWaveDuration(main_filename)))
-    cutting = omniCut('a1.wav')
+    cutting = omniCut(letter + '.wav')
     cutWav(main_filename, cutting[0], cutting[1], cutting[2])
     analyzeMute(main_filename)
     getWaveDuration(main_filename)
     wdata = get_wave_data("new_" + main_filename)
     show_specgram(wdata)
-    #rootWavReinit()
     getAmplitudeGram(main_filename)
     getAmplGram("new_" + main_filename)
     ExpendWaveData("new_" + main_filename)
 
-
-Main()
+doGeneral()
