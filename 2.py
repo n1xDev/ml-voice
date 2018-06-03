@@ -233,7 +233,7 @@ def ExpendWaveData(filename):
 
 def doGeneral():
     global main_filename
-    arr = list(range(1, 44))
+    arr = list(range(1, 6))
     for i in range(0, len(arr)):
         main_filename = str(arr[i]) + '.wav'
         print(main_filename)
